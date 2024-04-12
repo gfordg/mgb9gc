@@ -21,17 +21,25 @@
             max-width: 100%;
             margin: 0 auto;
             padding: 20px;
-            
         }
         .form-container {
             width: 25%;
             float: left;
         }
         .map-container {
-            width: 70%;
+            width: 75%;
             float: right;
             position: relative;
-            
+        }
+        .coordinates-display {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            z-index: 1000;
         }
         #addProjectButton {
             padding: 10px;
@@ -44,6 +52,21 @@
         }
         #reviewSubmitButton {
             padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .map-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        .map-controls button {
+            padding: 8px;
             background-color: #4CAF50;
             color: white;
             border: none;
@@ -90,6 +113,19 @@
             z-index: 1000;
             display: none;
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 <body>
@@ -98,13 +134,6 @@
     <div class="container">
         <div class="form-container">
             <form id="projectDetailsForm">
-                <div class="form-group">
-                    <label for="projectType">Project Type</label>
-                    <select id="projectType" name="projectType" onchange="toggleForm()">
-                        <option value="singleStructure">Single Structure</option>
-                        <option value="linearProject">Linear Project</option>
-                    </select>
-                </div>
                 <div class="form-group">
                     <label for="projectTitle">Project Title</label>
                     <input type="text" id="projectTitle" name="projectTitle" placeholder="eg. Construction of Evacuation Center" required>
@@ -131,185 +160,180 @@
                     <label for="longitude">Longitude</label>
                     <input type="text" id="longitude" name="longitude" readonly>
                 </div>
-                <div class="form-group" id="linearProjectCoords" style="display: none;">
-                    <label for="startLatitude">Start Coordinates</label>
-                    <div>
-                        <label for="startLatitude">Latitude</label>
-                        <input type="text" id="startLatitude" name="startLatitude" readonly>
-                    </div>
-                    <div>
-                        <label for="startLongitude">Longitude</label>
-                        <input type="text" id="startLongitude" name="startLongitude" readonly>
-                    </div>
-                    <label for="endLatitude">End Coordinates</label>
-                    <div>
-                        <label for="endLatitude">Latitude</label>
-                        <input type="text" id="endLatitude" name="endLatitude" readonly>
-                    </div>
-                    <div>
-                        <label for="endLongitude">Longitude</label>
-                        <input type="text" id="endLongitude" name="endLongitude" readonly>
-                    </div>
-                </div>
                 <div class="form-group">
                     <label for="sitePhotos">Upload Site Photos</label>
                     <input type="file" id="sitePhotos" name="sitePhotos" accept="image/*" multiple required>
                 </div>
+                <input type="button" id="addProjectButton" value="Add Another Project" onclick="addProject()">
+                <input type="button" id="reviewSubmitButton" value="Review & Submit" onclick="reviewAndSubmit()">
             </form>
         </div>
         <div class="map-container">
             <div id="map"></div>
-            <div id="instructionBox"></div>
-            <button id="addProjectButton" onclick="addProject()">Add Another Project</button>
-            <button id="reviewSubmitButton" onclick="reviewAndSubmit()">Review & Submit</button>
+            <div id="coordinates" class="coordinates-display"></div>
+            <div class="map-controls">
+                <button onclick="zoomIn()">Zoom In</button>
+                <button onclick="zoomOut()">Zoom Out</button>
+            </div>
         </div>
+    </div>
+
+    <div id="projectTableContainer">
+        <table id="projectTable">
+            <thead>
+                <tr>
+                    <th>Project Title</th>
+                    <th>Street/Purok/Sitio</th>
+                    <th>Barangay</th>
+                    <th>City/Municipality</th>
+                    <th>Province</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Project details will be added here dynamically -->
+            </tbody>
+        </table>
     </div>
 
     <!-- JavaScript code to initialize the map and handle user interactions -->
     <script>
         require([
-    "esri/Map",
-    "esri/views/MapView",
-    "esri/geometry/Polyline",
-    "esri/Graphic",
-    "esri/symbols/SimpleLineSymbol",
-    "esri/symbols/SimpleMarkerSymbol",
-    "dojo/domReady!"
-], function(Map, MapView, Polyline, Graphic, SimpleLineSymbol, SimpleMarkerSymbol) {
-    var map = new Map({
-        basemap: "satellite"
-    });
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/Graphic",
+            "esri/layers/GraphicsLayer",
+            "esri/symbols/SimpleMarkerSymbol",
+            "dojo/domReady!"
+        ], function(Map, MapView, Graphic, GraphicsLayer, SimpleMarkerSymbol) {
+            var map = new Map({
+                basemap: "satellite"
+            });
 
-    var view = new MapView({
-        container: "map",
-        map: map,
-        center: [122.845189, 7.729885], // Default center
-        zoom: 9 // Default zoom level
-    });
+            var view = new MapView({
+                container: "map",
+                map: map,
+                center: [122.845189, 7.729885], // Default center
+                zoom: 9, // Default zoom level
+                navigationToggle: false // Disable default zoom in and zoom out controls
+            });
 
-    var instructionBox = document.getElementById("instructionBox");
-    var points = []; // Array to store clicked points
-    var polylineGraphic = null;
+            var graphicsLayer = new GraphicsLayer();
 
-    view.on("click", function(event) {
-        var formData = new FormData(document.getElementById("projectDetailsForm"));
-        var projectType = formData.get("projectType");
+            map.add(graphicsLayer);
 
-        if (projectType === "singleStructure") {
-            addSingleStructure(event.mapPoint.latitude, event.mapPoint.longitude);
-        } else if (projectType === "linearProject") {
-            addLinearProject(event.mapPoint.latitude, event.mapPoint.longitude);
-        }
-    });
+            var currentGraphic = null;
 
-    // Right-click event listener
-    view.on("pointer-down", function(event) {
-        if (event.button === 2) { // Check if the right mouse button was clicked
-            event.stopPropagation(); // Prevent the default right-click behavior
-            var formData = new FormData(document.getElementById("projectDetailsForm"));
-            var projectType = formData.get("projectType");
+            view.on("click", function(event) {
+                var formData = new FormData(document.getElementById("projectDetailsForm"));
+                addSingleStructure(event.mapPoint.latitude, event.mapPoint.longitude, formData);
+            });
 
-            if (projectType === "linearProject" && points.length > 0) {
-                // Remove the last point from the points array
-                points.pop();
-                // Update the polyline on the map
-                updatePolyline();
+            function addSingleStructure(latitude, longitude, formData) {
+                // Clear the previous graphic
+                if (currentGraphic) {
+                    graphicsLayer.remove(currentGraphic);
+                }
+
+                // Update form fields with new coordinates
+                document.getElementById("latitude").value = latitude.toFixed(6);
+                document.getElementById("longitude").value = longitude.toFixed(6);
+
+                // Create a new marker symbol
+                var markerSymbol = new SimpleMarkerSymbol({
+                    color: [226, 119, 40],
+                    outline: {
+                        color: [255, 255, 255],
+                        width: 1
+                    }
+                });
+
+                // Create a new graphic with the marker symbol at the clicked location
+                var graphic = new Graphic({
+                    geometry: {
+                        type: "point",
+                        latitude: latitude,
+                        longitude: longitude
+                    },
+                    symbol: markerSymbol
+                });
+
+                // Add the new graphic to the graphics layer
+                graphicsLayer.add(graphic);
+
+                // Store reference to the current graphic
+                currentGraphic = graphic;
             }
-        }
-    });
 
-    function addSingleStructure(latitude, longitude) {
-    // Remove existing graphics from the view
-    view.graphics.removeAll();
+            window.addProject = function() {
+                var formData = new FormData(document.getElementById("projectDetailsForm"));
+                var projectTitle = formData.get("projectTitle");
+                var street = formData.get("street");
+                var barangay = formData.get("barangay");
+                var city = formData.get("city");
+                var province = formData.get("province");
+                var latitude = formData.get("latitude");
+                var longitude = formData.get("longitude");
 
-    // Update form fields with new coordinates
-    document.getElementById("latitude").value = latitude.toFixed(6);
-    document.getElementById("longitude").value = longitude.toFixed(6);
+                // Create a new row in the table
+                var table = document.getElementById("projectTable").getElementsByTagName('tbody')[0];
+                var newRow = table.insertRow();
+                var cell1 = newRow.insertCell(0);
+                var cell2 = newRow.insertCell(1);
+                var cell3 = newRow.insertCell(2);
+                var cell4 = newRow.insertCell(3);
+                var cell5 = newRow.insertCell(4);
+                var cell6 = newRow.insertCell(5);
+                var cell7 = newRow.insertCell(6);
+                var cell8 = newRow.insertCell(7); // Add cell for actions
 
-    // Create a new marker symbol
-    var markerSymbol = new SimpleMarkerSymbol({
-        color: [226, 119, 40],
-        outline: {
-            color: [255, 255, 255],
-            width: 1
-        }
-    });
+                // Add data to the new row
+                cell1.innerHTML = projectTitle;
+                cell2.innerHTML = street;
+                cell3.innerHTML = barangay;
+                cell4.innerHTML = city;
+                cell5.innerHTML = province;
+                cell6.innerHTML = latitude;
+                cell7.innerHTML = longitude;
 
-    // Create a new graphic with the marker symbol at the clicked location
-    var graphic = new Graphic({
-        geometry: {
-            type: "point",
-            latitude: latitude,
-            longitude: longitude
-        },
-        symbol: markerSymbol
-    });
+                // Add delete button
+                var deleteButton = document.createElement("button");
+                deleteButton.textContent = "Delete";
+                deleteButton.onclick = function() {
+                    // Implement delete functionality here
+                    var row = this.parentNode.parentNode;
+                    row.parentNode.removeChild(row);
+                    graphicsLayer.remove(graphicsLayer.graphics.filter(function(graphic) {
+                        return graphic.geometry.latitude === parseFloat(latitude) && graphic.geometry.longitude === parseFloat(longitude);
+                    })[0]);
+                };
+                cell8.appendChild(deleteButton);
 
-    // Add the new graphic to the view
-    view.graphics.add(graphic);
-}
+                // Reset the form
+                document.getElementById("projectDetailsForm").reset();
+            };
 
+            window.reviewAndSubmit = function() {
+                // Handle review and submit logic here
+                alert("Review and submit functionality not implemented yet!");
+            };
 
-    function addLinearProject(latitude, longitude) {
-        points.push([longitude.toFixed(6), latitude.toFixed(6)]);
-        updatePolyline();
-    }
+            window.zoomIn = function() {
+                view.zoom += 1;
+            };
 
-    function updatePolyline() {
-        var lineSymbol = new SimpleLineSymbol({
-            color: [226, 119, 40],
-            width: 4
+            window.zoomOut = function() {
+                view.zoom -= 1;
+            };
+
+            // Show coordinates on hover
+            view.on("pointer-move", function(event) {
+                var coordinates = view.toMap({ x: event.x, y: event.y });
+                document.getElementById("coordinates").innerHTML = "Latitude: " + coordinates.latitude.toFixed(6) + ", Longitude: " + coordinates.longitude.toFixed(6);
+            });
         });
-        var lineGeometry = new Polyline({
-            paths: points,
-            spatialReference: { wkid: 4326 }
-        });
-        if (polylineGraphic) {
-            view.graphics.remove(polylineGraphic);
-        }
-        polylineGraphic = new Graphic({
-            geometry: lineGeometry,
-            symbol: lineSymbol
-        });
-        view.graphics.add(polylineGraphic);
-        if (points.length > 1) {
-            instructionBox.textContent = "Click to continue drawing or finish";
-            // Update start and end coordinates on the form
-            document.getElementById("startLatitude").value = points[0][1];
-            document.getElementById("startLongitude").value = points[0][0];
-            document.getElementById("endLatitude").value = points[points.length - 1][1];
-            document.getElementById("endLongitude").value = points[points.length - 1][0];
-        } else {
-            instructionBox.textContent = "Click to add more points";
-        }
-    }
-
-    window.addProject = function() {
-        document.getElementById("projectDetailsForm").reset();
-        view.graphics.removeAll();
-        points = [];
-        polylineGraphic = null;
-        instructionBox.textContent = "";
-    };
-
-    window.reviewAndSubmit = function() {
-        // Handle review and submit logic here
-    };
-
-    window.toggleForm = function() {
-        var projectType = document.getElementById("projectType").value;
-        var singleStructureCoords = document.getElementById("singleStructureCoords");
-        var linearProjectCoords = document.getElementById("linearProjectCoords");
-        if (projectType === "singleStructure") {
-            singleStructureCoords.style.display = "block";
-            linearProjectCoords.style.display = "none";
-        } else if (projectType === "linearProject") {
-            singleStructureCoords.style.display = "none";
-            linearProjectCoords.style.display = "block";
-        }
-    };
-});
-
     </script>
 </body>
 </html>
