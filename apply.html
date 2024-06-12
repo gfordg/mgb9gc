@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply for Geohazard Certification</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Application for Geohazard Certification</h1>
+        </div>
+    </header>
+    
+    <div class="container">
+        <section id="apply-form" class="section-container">
+            <form id="application-form" class="gc-form" action="project_details.html" method="get">
+                <div class="form-row">
+                    <label for="project-type">Project Type:</label>
+                    <select id="project-type" name="project-type" required>
+                        <option value="">Select project type</option>
+                        <option value="type1">Point-Based Project (ex. buildings, water reservoir, etc.)</option>
+                        <option value="type2">Line-Based Project (ex. roads, bridges, water pipeline, etc.)</option>
+                        <option value="type3">Combination of Point-Based & Line-Based Projects</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="title">Name Title</label>
+                    <input type="text" id="title" name="name-title" placeholder="ex. Engr./Atty./Mr./Ms./Hon./Dr./" required>
+                </div>
+                <div class="form-row">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName" placeholder="Glen Ford" required>
+                </div>
+                <div class="form-row">
+                    <label for="middleInitial">Middle Initial</label>
+                    <input type="text" id="middleInitial" name="middleInitial" placeholder="B" required>
+                </div>
+                <div class="form-row">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName" placeholder="Dela Cruz" required>
+                </div>
+                <div class="form-row">
+                    <label for="nameExt">Name Extension</label>
+                    <input type="text" id="nameExt" name="nameExt" placeholder="ex. Jr./III/CPA/PhD" required>
+                </div>
+                <div class="form-row">
+                    <label for="designation">Designation</label>
+                    <input type="text" id="designation" name="designation" placeholder="ex. Municipal Mayor, Regional Director, District Engineer, etc." required>
+                </div>
+                <div class="form-row">
+                    <label for="officeAgency">Office/Agency</label>
+                    <input type="text" id="officeAgency" name="officeAgency" required>
+                </div>
+                <div class="form-row">
+                    <label for="officeAddress">Office Address</label>
+                    <input type="text" id="officeAddress" name="officeAddress" required>
+                </div>
+                <div class="form-row">
+                    <label for="contactNo">Mobile Number</label>
+                    <input type="text" id="contactNo" name="contactNo" placeholder="preferably the person who prepared the application requirements" required>
+                </div>
+                <div class="form-row">
+                    <label for="landlineNo">Landline Number</label>
+                    <input type="text" id="landlineNo" name="landlineNo" placeholder="ex. (062) 947-4146" required>
+                </div>
+                <div class="form-row">
+                    <label for="emailAddress">Email Address</label>
+                    <input type="text" id="emailAddress" name="emailAddress" placeholder="ex. region9@mgb.gov.ph" required>
+                </div>
+                <div class="form-row">
+                    <label for="signed-letter">Signed Letter Request:</label>
+                <input type="file" id="signed-letter" name="signed-letter" accept=".pdf,.doc,.docx" required>
+                
+                <button type="button" onclick="reviewAndSubmit()">Review and Submit</button>
+            </form>
+        </section>
+    </div>  
+    <footer>
+        &copy; 2024 Issuance of Geohazard Certification - All Rights Reserved
+    </footer>
+    <!-- Review Modal -->
+    <div id="review-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeReviewModal()">&times;</span>
+            <div id="review-modal-content"></div>
+            <button onclick="goBack()">Go Back</button>
+            <button onclick="document.getElementById('application-form').submit()">Proceed</button>
+        </div>
+    </div>
+
+    <!-- JavaScript for Review and Submit functionality -->
+    <script src="script.js"></script>
+</body>
+</html>

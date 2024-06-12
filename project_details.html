@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Details</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Project Details</h1>
+        </div>
+    </header>
+    
+    <div class="container">
+        <section id="project-details-form" class="section-container">
+            <h2>Enter Project Details</h2>
+            <form action="submit_application.html" method="post">
+                <label for="project-name">Project Name:</label>
+                <input type="text" id="project-name" name="project-name" required>
+                
+                <label for="project-location">Project Location:</label>
+                <input type="text" id="project-location" name="project-location" required>
+                
+                <label for="project-description">Project Description:</label>
+                <textarea id="project-description" name="project-description" required></textarea>
+                
+                <label for="project-photos">Project Photos:</label>
+                <input type="file" id="project-photos" name="project-photos" accept="image/*" multiple required>
+                
+                <button type="submit">Submit Application</button>
+            </form>
+        </section>
+    </div>
+
+    <footer>
+        &copy; 2024 Issuance of Geohazard Certification - All Rights Reserved
+    </footer>
+</body>
+</html>
